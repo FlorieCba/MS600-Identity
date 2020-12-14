@@ -22,8 +22,8 @@ export default class App extends Component {
     /* AUTH OBJECT */
     this.msalInstance = new PublicClientApplication( {
       auth: {
-          clientId: '73d61beb-661f-4678-a0c2-079b1e487b67',
-          authority: 'https://login.microsoftonline.com/cd7dc162-dec0-4933-9cdc-17a6f076e1f0',
+          clientId: '',
+          authority: '',
           redirectUri: 'http://localhost:3000'
       }
     });
