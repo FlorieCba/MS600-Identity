@@ -1,25 +1,93 @@
-import logo from './logo.svg';
-import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import './App.css';
+import React, { Component } from "react";
+import {
+  Route,
+  NavLink,
+  BrowserRouter as Router
+} from "react-router-dom";
+import {Container} from 'reactstrap';
+import Home from "./Component/Home";
+import Contact from "./Component/Contact";
+import DisplayInfo from "./Component/DisplayInfo";
+import 'bootstrap/dist/css/bootstrap.css';
+import {PublicClientApplication} from "@azure/msal-browser";
+
+
+
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+
+    /* AUTH OBJECT */
+    this.msalInstance = new PublicClientApplication( {
+      auth: {
+          clientId: '73d61beb-661f-4678-a0c2-079b1e487b67',
+          authority: 'https://login.microsoftonline.com/cd7dc162-dec0-4933-9cdc-17a6f076e1f0',
+          redirectUri: 'http://localhost:3000'
+      }
+    });
+    
+    /* LOGIN REQUEST */
+    this.loginRequest = {
+      scopes: ["User.Read"]
+     };
+    
+     /* STATE */
+    this.state = {
+      authVar:false,
+      username: {}
+    };
+
+  }
+  
+  render(){
+    return (
+      <Router>
+      <div>
+        <ul className="header">
+          <li><NavLink to="/">Home</NavLink></li>
+          <li><NavLink to="/displayinfo">Information</NavLink></li>
+          <li><NavLink to="/contact">Contact</NavLink></li>
+        </ul>
+        <Container>
+        <Route exact path="/" render = {(props) =>
+              <Home {...props}
+              authVar={this.state.authVar}
+              username={this.state.username}
+              authButton={this.state.authVar ? this.signOut : this.signIn} />
+            }/>
+          <Route path="/displayinfo" component={DisplayInfo}/>
+          <Route path="/contact" component={Contact}/>
+        </Container>
+      </div>
+    </Router>
+    );
+  } 
+
+  /* SIGN IN */
+  signIn = async () => {
+    //TO DO
+  }
+
+  /* SIGN OUT */
+  signOut = () => {
+    //TO DO
+  }
+
+  /* GET USER INFORMATION */
+  async getUserInfo(){
+    //TO DO
+  }
+  
+  /* GET TOKEN for the graph access*/
+  async getTokenPopup(request) {
+    //TO DO
+  }
+
+  /* ACCESS GRAPH to get user details */
+  async getUserDetails(token) {
+    //TO DO
+  }
 }
 
-export default App;
