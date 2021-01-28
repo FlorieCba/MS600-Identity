@@ -5,10 +5,12 @@ import {
   
 function HomeContent(props) {
   if(props.authVar){
+    const docs = props.documents.map((d) => <li><a href={d.url}>{d.name}</a></li>);
     return(
       <div>
         <h2>Hello {props.username.displayName}</h2>
         <p>If you see this text, you are logging!</p>
+        <p>Your last documents : <ul>{docs}</ul></p>
         <Button color="primary" onClick={props.authButton}>Sign-out</Button>
       </div>
     );
@@ -25,6 +27,7 @@ export default class Home extends React.Component {
           authVar={this.props.authVar}
           username={this.props.username}
           authButton={this.props.authButton}
+          documents={this.props.documents}
         />
       </Jumbotron>
     );

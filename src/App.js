@@ -22,24 +22,42 @@ export default class App extends Component {
     /* AUTH OBJECT */
     this.msalInstance = new PublicClientApplication( {
       auth: {
-          clientId: '',
-          authority: '',
+          clientId: 'a3fc7bff-3330-4bac-b4b5-24a46cbefd84',
+          authority: 'https://login.microsoftonline.com/cd7dc162-dec0-4933-9cdc-17a6f076e1f0',
           redirectUri: 'http://localhost:3000'
       }
     });
     
     /* LOGIN REQUEST */
     this.loginRequest = {
-      scopes: ["User.Read"]
+      scopes: ["User.Read","sites.read.all"]
      };
     
      /* STATE */
     this.state = {
       authVar:false,
-      username: {}
+      username: {},
+      documents:[]
     };
 
   }
+
+  componentDidMount(){
+        this.msalInstance.handleRedirectPromise()
+        .then(async (s) => {
+          console.log(s);
+          if (s !== null)
+          {
+            console.log('success');
+            await this.getUserInfo();
+          }
+        })
+        .catch((a) => {
+          console.log('err');
+          console.log(a);
+        });
+      }
+    
   
   render(){
     return (
@@ -55,7 +73,8 @@ export default class App extends Component {
               <Home {...props}
               authVar={this.state.authVar}
               username={this.state.username}
-              authButton={this.state.authVar ? this.signOut : this.signIn} />
+              authButton={this.state.authVar ? this.signOut : this.signIn}
+              documents={this.state.documents}/>
             }/>
           <Route path="/displayinfo" component={DisplayInfo}/>
           <Route path="/contact" component={Contact}/>
@@ -67,27 +86,125 @@ export default class App extends Component {
 
   /* SIGN IN */
   signIn = async () => {
-    //TO DO
+    /*await this.msalInstance.loginPopup({
+      scopes: ["user.read"]
+    });
+    await this.getUserInfo();*/
+    var popUp = await this.msalInstance.loginPopup({
+              scopes: ["user.read","sites.read.all"]
+            }).catch((error) => {
+          console.log(error);
+      });
+
+      //popUp = null;
+
+      if (popUp == null || typeof(popUp)=='undefined') {  
+        alert('Pop Up Blocker is activated. Pop Up Login cancelled. Redirect mode.'); 
+        
+        await this.msalInstance.loginRedirect({
+                          scopes: ["user.read","sites.read.all"]
+          }); 
+       } 
+
+      else{
+        await this.getUserInfo();
+        await this.getUserDocs();
+
+      }
+  
   }
 
   /* SIGN OUT */
   signOut = () => {
-    //TO DO
+    this.msalInstance.logout();
   }
 
   /* GET USER INFORMATION */
   async getUserInfo(){
-    //TO DO
+    this.getTokenPopup(this.loginRequest).then(response => {
+        var token = response.accessToken;
+        console.log(token);
+        return this.getUserDetails(token); 
+      });
   }
+
+  /* GET DOCUMENTS */
+  async getUserDocs(){
+      this.getTokenPopup(this.loginRequest).then(response => {
+      var token = response.accessToken;
+      console.log(token);
+      return this.getUserDetailsDocuments(token); 
+      });
+  }
+    
   
   /* GET TOKEN for the graph access*/
   async getTokenPopup(request) {
-    //TO DO
+    const currentAccounts = this.msalInstance.getAllAccounts();
+    this.username = currentAccounts[0].username;
+    console.log(this.username);
+
+    request.account = this.msalInstance.getAccountByUsername(this.username);
+
+    return this.msalInstance.acquireTokenSilent(request);  
   }
 
   /* ACCESS GRAPH to get user details */
   async getUserDetails(token) {
-    //TO DO
+    const endpoint = "https://graph.microsoft.com/v1.0/me";
+    const options = {
+      method: "GET",
+      mode: "cors",
+      cache: "no-cache",
+      headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+      }
+    };
+
+    fetch(endpoint, options).then(async (response) => {
+            var res = await response.json();
+            console.log(res);        
+            this.setState({
+                authVar: true,
+                  username: {
+                  displayName: res.displayName
+                  }
+            });
+            return res;
+    });
   }
+
+  /* ACCESS GRAPH to get user documents */
+    async getUserDetailsDocuments(token) {
+      //PART 1
+      const endpoint = "https://graph.microsoft.com/v1.0/me/insights/used?$filter=ResourceVisualization/containerType eq 'OneDriveBusiness'&$top=3";
+      const options = {
+        method: "GET",
+        mode: "cors",
+        cache: "no-cache",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+      };
+
+      //PART 2
+      fetch(endpoint, options).then(async (response) => {
+            var res = await response.json();
+            console.log(res);
+            var docs = [];
+            res.value.forEach((v) => {
+              docs.push({ url: v.resourceReference.webUrl, name: v.resourceVisualization.title });
+            });
+            this.setState({
+              documents: docs
+            });
+            return res;
+      });
+        
+    
+    }
+    
 }
 
